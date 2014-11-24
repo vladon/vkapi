@@ -4,8 +4,8 @@ interface
 
 uses
   System.SysUtils, REST.Authenticator.OAuth, REST.Client, REST.Types,
-  REST.Utils, System.Math, System.Types, System.StrUtils, System.JSON;
-
+  REST.Utils, System.Math, System.Types, System.StrUtils, System.JSON,
+  System.Variants, SynCommons;
 
 // VK API constants
 const
@@ -121,6 +121,14 @@ function VkPermissionsToInt(const AVkPermissions: TVkPermissions): Integer;
 function StrToVkPermissions(const AStr: string): TVkPermissions;
 function IntToVkPermissions(const AInt: Integer): TVkPermissions;
 
+{ helpers }
+type
+  TVkPhotosGetWallUploadServerResponse = record
+    UploadUrl: string;
+    AlbumId: Integer;
+    UserId: Integer;
+  end;
+
 { TVkApi class }
 
 type
@@ -147,6 +155,8 @@ type
       function GetAuthorizationRequestURI: string;
 
       procedure SetAccessToken(const Value: string);
+
+      procedure PrepareRESTRequest;
     public
       property Scope: string read GetScope write SetScope;
       property Display: TVkDisplayType read GetDisplay write SetDisplay;
@@ -165,6 +175,9 @@ type
       function WallPost(const AOwnerId: Integer; const AMessage: string):
         string;
 
+      // photos methods
+      function PhotosGetWallUploadServer(const GroupId: Integer):
+        TVkPhotosGetWallUploadServerResponse;
   end;
 
 implementation
@@ -232,6 +245,8 @@ begin
   FRESTRequest.HandleRedirects := True;
   FRESTRequest.Response := FRESTResponse;
   FRESTRequest.Timeout := VKAPI_TIMEOUT;
+
+  Self.ApiVersion := VKAPI_DEFAULT_API_VERSION;
 end;
 
 destructor TVkApi.Destroy;
@@ -269,6 +284,37 @@ begin
     Result := '';
 end;
 
+function TVkApi.PhotosGetWallUploadServer(
+  const GroupId: Integer): TVkPhotosGetWallUploadServerResponse;
+var
+  v: Variant;
+begin
+  PrepareRESTRequest;
+
+  FRESTRequest.Resource := 'photos.getWallUploadServer';
+  FRESTRequest.Method := TRESTRequestMethod.rmGET;
+  FRESTRequest.Params.AddItem('group_id', IntToStr(GroupId), pkGETorPOST,
+    [poDoNotEncode]);
+  FRESTRequest.Execute;
+
+  if FRESTResponse.StatusCode = 200 then
+  begin
+    v := _JsonFast(FRESTResponse.Content);
+    Result.UploadUrl := v.response.upload_url;
+    Result.AlbumId := v.response.album_id;
+    Result.UserId := v.response.user_id;
+  end else begin
+
+  end;
+end;
+
+procedure TVkApi.PrepareRESTRequest;
+begin
+  FRESTRequest.Params.Clear;
+  FRESTRequest.Params.AddItem('v', VkApiVersionToString(Self.ApiVersion),
+     pkGETorPOST, [poDoNotEncode]);
+end;
+
 procedure TVkApi.SetAccessToken(const Value: string);
 begin
   FAccessToken := Value;
@@ -297,15 +343,14 @@ end;
 function TVkApi.WallPost(const AOwnerId: Integer;
   const AMessage: string): string;
 begin
+  PrepareRESTRequest;
+
   FRESTRequest.Resource := 'wall.post';
-  FRESTRequest.Method := TRESTRequestMethod.rmGET;
-  FRESTRequest.Params.Clear;
+  FRESTRequest.Method := TRESTRequestMethod.rmPOST;
   FRESTRequest.Params.AddItem('owner_id', IntToStr(AOwnerId), pkGETorPOST, [poDoNotEncode]);
   FRESTRequest.Params.AddItem('friends_only', '0', pkGETorPOST, [poDoNotEncode]);
   FRESTRequest.Params.AddItem('from_group', '1', pkGETorPOST, [poDoNotEncode]);
   FRESTRequest.Params.AddItem('message', AMessage, pkGETorPOST, [poDoNotEncode]);
-  FRESTRequest.Params.AddItem('v', VkApiVersionToString(Self.ApiVersion),
-     pkGETorPOST, [poDoNotEncode]);
   FRESTRequest.Execute;
 
   if FRESTRequest.Response.StatusCode = 200 then
@@ -566,7 +611,7 @@ end;
 
 function StrToVkPermissions(const AStr: string): TVkPermissions;
 var
-  sda: TStringDynArray;
+  sda: System.Types.TStringDynArray;
   i: Integer;
 begin
   Result := [];
