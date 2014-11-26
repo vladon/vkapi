@@ -35,13 +35,13 @@ type
      av4_98, av4_99, av4_100, av4_101, av4_102, av4_103, av4_104, av5_0, av5_1,
      av5_2, av5_3, av5_4, av5_5, av5_6, av5_7, av5_8, av5_9, av5_10, av5_11,
      av5_12, av5_13, av5_14, av5_15, av5_16, av5_17, av5_18, av5_19, av5_20,
-     av5_21, av5_22, av5_23, av5_24, av5_25, av5_26);
+     av5_21, av5_22, av5_23, av5_24, av5_25, av5_26, av5_27);
 
 const
-  VKAPI_LAST_API_VERSION: TVkApiVersion = TVkApiVersion.av5_26;
+  VKAPI_LAST_API_VERSION: TVkApiVersion = TVkApiVersion.av5_27;
 
 const
-  VKAPI_DEFAULT_API_VERSION: TVkApiVersion = TVkApiVersion.av5_26;
+  VKAPI_DEFAULT_API_VERSION: TVkApiVersion = TVkApiVersion.av5_27;
 
 function VkApiVersionToString(const AApiVersion: TVkApiVersion): string;
 
@@ -129,6 +129,32 @@ type
     UserId: Integer;
   end;
 
+type
+  TVkPostedPhotoInfo = record
+    Server: Integer;
+    Photo: string; // photo info
+    Hash: string;
+  end;
+
+type
+  TVkSaveWallPhotoInfo = record
+    ;
+  end;
+
+type
+  TVkWallPhotoInfo = record
+    Id: Integer;
+    PId: Integer;
+    AId: Integer;
+    OwnerId: Integer;
+    Src: string;
+    SrcBig: string;
+    SrcSmall: string;
+    Created: string;
+    SrcXBig: string;
+    SrcXXBig: string;
+  end;
+
 { TVkApi class }
 
 type
@@ -175,9 +201,19 @@ type
       function WallPost(const AOwnerId: Integer; const AMessage: string):
         string;
 
+      // ***
       // photos methods
+
+      // photos.getWallUploadServer
       function PhotosGetWallUploadServer(const GroupId: Integer):
         TVkPhotosGetWallUploadServerResponse;
+
+      // photos.saveWallPhoto - https://vk.com/dev/photos.saveWallPhoto
+      function PhotosSaveWallPhoto(const APostedPhotoInfo: TVkSaveWallPhotoInfo):
+        TVkWallPhotoInfo;
+
+      // ***
+      function UploadPhotoToWall(const AFilename: string): TVkWallPhotoInfo;
   end;
 
 implementation
@@ -299,13 +335,26 @@ begin
 
   if FRESTResponse.StatusCode = 200 then
   begin
-    v := _JsonFast(FRESTResponse.Content);
+    v := _JsonFast(RawUTF8(FRESTResponse.Content));
     Result.UploadUrl := v.response.upload_url;
     Result.AlbumId := v.response.album_id;
     Result.UserId := v.response.user_id;
   end else begin
 
   end;
+end;
+
+function TVkApi.PhotosSaveWallPhoto(
+  const APostedPhotoInfo: TVkPostedPhotoInfo): TVkWallPhotoInfo;
+var
+  v: Variant;
+begin
+  PrepareRESTRequest;
+
+  FRESTRequest.Resource := 'photos.saveWallPhoto';
+  FRESTRequest.Method := TRESTRequestMethod.rmPOST;
+
+
 end;
 
 procedure TVkApi.PrepareRESTRequest;
@@ -338,6 +387,11 @@ procedure TVkApi.SetScope(const Value: string);
 begin
   if FVkAuthenticator <> nil then
     FVkAuthenticator.Scope := Value;
+end;
+
+function TVkApi.UploadPhotoToWall(const AFilename: string): TVkWallPhotoInfo;
+begin
+
 end;
 
 function TVkApi.WallPost(const AOwnerId: Integer;
@@ -459,6 +513,7 @@ begin
     av5_24: Result := '5.24';
     av5_25: Result := '5.25';
     av5_26: Result := '5.26';
+    av5_27: Result := '5.27';
   else
     Result := '';
   end;
