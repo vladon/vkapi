@@ -8,11 +8,6 @@ uses
   System.Variants, SynCommons, VkApi.Photo, System.DateUtils, VkApi.Utils,
   VkApi.Authenticator, VkApi.Types, VkApi.Constants;
 
-function VkPermissionsToStr(const AVkPermissions: TVkPermissions): string;
-function VkPermissionsToInt(const AVkPermissions: TVkPermissions): Integer;
-function StrToVkPermissions(const AStr: string): TVkPermissions;
-function IntToVkPermissions(const AInt: Integer): TVkPermissions;
-
 { helpers }
 type
   TVkPhotosGetWallUploadServerResponse = record
@@ -260,20 +255,30 @@ begin
   begin
     v := _JsonFast(RawUTF8(FRESTResponse.Content));
 
-    Result.Id := v.response.id;
-    Result.AlbumId := v.response.album_id;
-    Result.OwnerId := v.response.owner_id;
-    Result.UserId := v.response.user_id;
-    Result.Photo75 := v.response.photo_75;
-    Result.Photo130 := v.response.photo_130;
-    Result.Photo604 := v.response.photo_604;
-    Result.Photo807 := v.response.photo_807;
-    Result.Photo1280 := v.response.photo_1280;
-    Result.Photo2560 := v.response.photo_2560;
-    Result.Width := v.response.width;
-    Result.Height := v.response.height;
-    Result.Text := v.response.text;
-    Result.Date := UnixToDateTime(v.response.date);
+    Result.Text := FRESTResponse.Content;
+
+    try
+      Result.Id := VarValue(v.response._(0).id, 0);
+      Result.AlbumId := VarValue(v.response._(0).album_id, 0);
+      Result.OwnerId := VarValue(v.response._(0).owner_id, 0);
+
+      Result.UserId := VarValue(v.response._(0).user_id, 0);
+      Result.Photo75 := VarValue(v.response._(0).photo_75, EmptyStr);
+      Result.Photo130 := VarValue(v.response._(0).photo_130, EmptyStr);
+      Result.Photo604 := VarValue(v.response._(0).photo_604, EmptyStr);
+      Result.Photo807 := VarValue(v.response._(0).photo_807, EmptyStr);
+      Result.Photo1280 := VarValue(v.response._(0).photo_1280, EmptyStr);
+      Result.Photo2560 := VarValue(v.response._(0).photo_2560);
+      Result.Width := VarValue(v.response._(0).width, 0);
+      Result.Height := VarValue(v.response._(0).height, 0);
+      Result.Text := VarValue(v.response._(0).text, EmptyStr);
+      Result.Date := UnixToDateTime(VarValue(v.response._(0).date));
+    except
+      on E: Exception do
+      begin
+        Result.Text := Result.Text + #13#10 + E.ClassName + #13#10 + E.Message;
+      end;
+    end;
   end;
 end;
 

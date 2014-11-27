@@ -2,7 +2,9 @@ unit VkApi.Utils;
 
 interface
 
-uses System.SysUtils, System.StrUtils, System.Types, VkApi.Types;
+uses
+  System.SysUtils, System.StrUtils, System.Types, VkApi.Types, System.Variants;
+
 
 function UserIdToOwnerId(const UserId: Cardinal): Integer;
 
@@ -20,6 +22,11 @@ function VkPermissionsToStr(const AVkPermissions: TVkPermissions): string;
 function VkPermissionsToInt(const AVkPermissions: TVkPermissions): Integer;
 function StrToVkPermissions(const AStr: string): TVkPermissions;
 function IntToVkPermissions(const AInt: Integer): TVkPermissions;
+
+function VarIsOk(const V: Variant): Boolean;
+function VarValue(const V: Variant; const DefaultValue: Variant):
+  Variant; overload;
+function VarValue(const V: Variant): Variant; overload;
 
 implementation
 
@@ -406,6 +413,52 @@ begin
   // nohttps value is not defined
 //  if (AInt and VKAPI_PERMISSION_NOHTTPS) <> 0 then
 //    Include(Result, vkpNoHttps);
+end;
+
+// variant helper
+function VarIsOk(const V: Variant): Boolean;
+begin
+  Result := not (VarIsNull(V) or VarIsEmpty(V) or VarIsError(V) or (VarToStr(V) =
+     EmptyStr) or VarIsClear(V));
+end;
+
+function VarValue(const V: Variant; const DefaultValue: Variant):
+  Variant;
+begin
+  if VarIsOk(V) then
+    Result := V
+  else
+    Result := DefaultValue;
+end;
+
+function VarValue(const V: Variant): Variant; overload;
+var
+  DefaultValue: Variant;
+begin
+  case VarType(Result) of
+    varSmallInt,
+    varInteger,
+    varShortInt,
+    varByte,
+    varWord,
+    varLongWord,
+    varInt64: DefaultValue := 0;
+
+    varSingle,
+    varDouble: DefaultValue := 0.0;
+
+    varCurrency: DefaultValue := 0;
+
+    varDate: DefaultValue := 0;
+
+    varOleStr,
+    varStrArg,
+    varString: DefaultValue := EmptyStr;
+
+    varBoolean: DefaultValue := False;
+  end;
+
+  Result := VarValue(V, DefaultValue);
 end;
 
 end.
