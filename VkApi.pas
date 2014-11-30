@@ -3,10 +3,11 @@ unit VkApi;
 interface
 
 uses
-  System.SysUtils, REST.Authenticator.OAuth, REST.Client, REST.Types,
-  REST.Utils, System.Math, System.Types, System.StrUtils, System.JSON,
-  System.Variants, SynCommons, VkApi.Photo, System.DateUtils, VkApi.Utils,
-  VkApi.Authenticator, VkApi.Types, VkApi.Constants, VkApi.Exception;
+  System.SysUtils, IPPeerServer, IPPeerClient, REST.Authenticator.OAuth,
+  REST.Client, REST.Types, REST.Utils, System.Math, System.Types,
+  System.StrUtils, System.JSON, System.Variants, SynCommons, VkApi.Photo,
+  System.DateUtils, VkApi.Utils, VkApi.Authenticator, VkApi.Types,
+  VkApi.Constants, VkApi.Exception;
 
 { helpers }
 type
